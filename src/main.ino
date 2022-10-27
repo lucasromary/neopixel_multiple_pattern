@@ -21,6 +21,7 @@ enum pattern_type
   FADING,
   CHASING,
   CHASING_BLUE,
+  FADING_TO_GREEN,
   FADING_TO_RED
 };
 
@@ -43,7 +44,8 @@ int borne_charge[] = {988, 991, 1300, 1305};
 int vehicule[] = {986, 988, 1209, 1213, 1305, 1312, 1320, 1324};
 int maison[] = {1292, 1300, 1313, 1320, 1324, 1332};
 
-int partie_bleu[] = {0, 230, 251, 293, 295, 393, 488, 548, 570, 619, 627, 640, 800, 986, 1152, 1209, 1213,1290, 642, 695, 697, 782};
+// 2 petite leds blue ?? 
+int partie_bleu[] = {0, 230, 251, 293, 295, 393, 488, 548, 570, 619, 627, 640, 800, 986, 1152, 1209, 1213, 1290, 642, 695, 697, 782};
 int poste_distribution[] = {293, 295, 401, 403, 515, 517, 640, 642, 696, 698, 860, 862, 1290, 1292}; // 370 ?
 
 int chemin_pv[] = {242, 246, 478, 483, 486, 488, 1062, 1064, 1051, 1058};
@@ -53,13 +55,17 @@ subStrips stripRainbow = {11, 10, RAINBOW, 20, 0};
 subStrips stripBlink2 = {30, 10, BLINK, 215, 0};
 subStrips stripBlink = {30, 10, BLINK, 2000, 0, panneau_pv, 30};
 subStrips stripChasing = {50, 20, CHASING, 2, 0, chemin_pv, 10};
-subStrips stripFadingToRed = {50, 20, FADING_TO_RED, 1000, 0, batt, 6};
+subStrips stripFadingToGreen = {50, 20, FADING_TO_GREEN, 1000, 0, batt, 6};
 subStrips stripChasingBlue = {50, 20, CHASING_BLUE, 2, 0, partie_bleu, 22};
+
+subStrips stripFadingToRed = {50, 20, FADING_TO_RED, 1000, 0, batt, 6};
+subStrips stripFadeBattery = {40, 10, FADING, 35, 0, batiment_acc, 10};
 
 int steps_fade = 0;
 int steps_chase = 0;
 int steps_chase_blue = 0;
-int steps_fed_to_red = 1;
+int steps_fade_to_green = 1;
+int steps_fade_to_red = 1;
 
 void setup()
 {
@@ -70,6 +76,21 @@ void setup()
 
 void loop()
 {
+// PV Version Nuit // 
+    if (millis() - stripFadingToRed.lastUpdate > stripFadingToRed.patternInterval)
+    {
+      updateSubStripPattern(stripFadingToRed);
+    }
+
+    if (millis() - stripFadeBattery.lastUpdate > stripFadeBattery.patternInterval)
+    {
+      updateSubStripPattern(stripFadeBattery);
+    }
+
+        if (millis() - stripChasingBlue.lastUpdate > stripChasingBlue.patternInterval)
+    {
+      updateSubStripPattern(stripChasingBlue);
+    }
   // subStrip Ramp
   /*
   if (millis() - stripBlink.lastUpdate > stripBlink.patternInterval)
@@ -84,27 +105,29 @@ void loop()
     updateSubStripPattern(stripRainbow);
 */
 
-  if (millis() - stripFade.lastUpdate > stripFade.patternInterval)
-  {
-    updateSubStripPattern(stripFade);
-  }
+  // Panneau nuit
 
-  if (millis() - stripChasing.lastUpdate > stripChasing.patternInterval)
-  {
-    updateSubStripPattern(stripChasing);
-  }
+  // PANNEAU PV //
+  /*
+    if (millis() - stripFade.lastUpdate > stripFade.patternInterval)
+    {
+      updateSubStripPattern(stripFade);
+    }
 
-  if (millis() - stripChasingBlue.lastUpdate > stripChasingBlue.patternInterval)
-  {
-    updateSubStripPattern(stripChasingBlue);
-  }
-  /**/
+    if (millis() - stripChasing.lastUpdate > stripChasing.patternInterval)
+    {
+      updateSubStripPattern(stripChasing);
+    }
 
-  if (millis() - stripFadingToRed.lastUpdate > stripFadingToRed.patternInterval)
-  {
-    updateSubStripPattern(stripFadingToRed);
-  }
-  //...
+    if (millis() - stripChasingBlue.lastUpdate > stripChasingBlue.patternInterval)
+    {
+      updateSubStripPattern(stripChasingBlue);
+    }
+    if (millis() - stripFadingToRed.lastUpdate > stripFadingToRed.patternInterval)
+    {
+      updateSubStripPattern(stripFadingToRed);
+    }
+  */
 }
 
 void updateSubStripPattern(subStrips &substripOut)
@@ -114,9 +137,11 @@ void updateSubStripPattern(subStrips &substripOut)
   case RAINBOW:
     rainbow(substripOut);
     break;
+  case FADING_TO_GREEN:
+    steps_fade_to_green = fade_green(substripOut, steps_fade_to_green);
+    break;
   case FADING_TO_RED:
-    Serial.println(steps_fed_to_red);
-    steps_fed_to_red = fade_to_red(substripOut, steps_fed_to_red);
+    steps_fade_to_red = fade_to_red(substripOut, steps_fade_to_red);
     break;
   case CHASING:
     steps_chase = chasing(substripOut, strip.Color(100, 100, 0), steps_chase);
@@ -165,7 +190,7 @@ int chasing_blue(subStrips &substrip, uint32_t color, int steps_chase_blue)
   {
     for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
     {
-      int color = (sin(dx + steps_chase) * 127 + 128)/6;
+      int color = (sin(dx + steps_chase) * 127 + 128) / 6;
       if (color < 10)
       {
         color = 0;
@@ -290,6 +315,39 @@ int fade(subStrips &substrip, uint32_t color, int steps_fade)
   return steps_fade;
 }
 
+int fade_green(subStrips &substrip, int steps_fade_to_green)
+{
+  if (steps_fade_to_green < 150)
+  {
+    // Serial.println(steps_fade_to_red);
+    for (int i = 0; i < substrip.size_tab; i += 2)
+    {
+      for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
+      {
+        strip.setPixelColor(dx, strip.Color(150, steps_fade_to_green, 0));
+      }
+    }
+    strip.show();
+    substrip.lastUpdate = millis(); // time for next change to the display
+    steps_fade_to_green += 3;
+  }
+
+  if (steps_fade_to_green > 150 && steps_fade_to_green < 300)
+  {
+    for (int i = 0; i < substrip.size_tab; i += 2)
+    {
+      for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
+      {
+        strip.setPixelColor(dx, strip.Color(300 - steps_fade_to_green, 150, 0));
+      }
+    }
+    strip.show();
+    substrip.lastUpdate = millis(); // time for next change to the display
+    steps_fade_to_green += 3;
+  }
+  return steps_fade_to_green;
+}
+
 int fade_to_red(subStrips &substrip, int steps_fade_to_red)
 {
   if (steps_fade_to_red < 150)
@@ -299,7 +357,7 @@ int fade_to_red(subStrips &substrip, int steps_fade_to_red)
     {
       for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
       {
-        strip.setPixelColor(dx, strip.Color(150, steps_fade_to_red, 0));
+        strip.setPixelColor(dx, strip.Color(steps_fade_to_red, 150, 0));
       }
     }
     strip.show();
@@ -313,7 +371,7 @@ int fade_to_red(subStrips &substrip, int steps_fade_to_red)
     {
       for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
       {
-        strip.setPixelColor(dx, strip.Color(300 - steps_fade_to_red, 150, 0));
+        strip.setPixelColor(dx, strip.Color(150, 300-steps_fade_to_red, 0));
       }
     }
     strip.show();
