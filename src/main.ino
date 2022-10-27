@@ -25,7 +25,8 @@ enum pattern_type
   FADING_TO_RED,
   FADING_TO_GREEN_VOITURE,
   FADING_TO_RED_VOITURE,
-  CONSTANT
+  CONSTANT,
+  FADING_GREEN_MAISON
 };
 
 struct subStrips
@@ -70,7 +71,7 @@ subStrips stripFadingToGreenVoiture = {50, 20, FADING_TO_GREEN, 500, 0, vehicule
 subStrips stripFadingToRedVoiture = {50, 20, FADING_TO_RED, 500, 0, vehicule_to_home, 4};
 
 subStrips stripConstant = {50, 20, CONSTANT, 1000, 0, borne_charge, 4};
-
+subStrips stripFadeGreenMaison = {40, 10, FADING_GREEN_MAISON, 35, 0, maison, 6};
 
 int steps_fade = 0;
 int steps_chase = 0;
@@ -79,6 +80,7 @@ int steps_fade_to_green = 1;
 int steps_fade_to_red = 1;
 int steps_fade_to_green_voiture = 1;
 int steps_fade_to_red_voiture = 1;
+int steps_fade_green_maison = 0;
 
 void setup()
 {
@@ -90,15 +92,25 @@ void setup()
 void loop()
 {
 
-  // subStrip Ramp
-  /*
-  if (millis() - stripBlink.lastUpdate > stripBlink.patternInterval)
+  // VEHICULE TO HOME //
+if (millis() - stripChasingBlue.lastUpdate > stripChasingBlue.patternInterval)
   {
-    updateSubStripPattern(stripBlink);
+    updateSubStripPattern(stripChasingBlue);
   }
-  */
+  if (millis() - stripFadingToRedVoiture.lastUpdate > stripFadingToRedVoiture.patternInterval)
+  {
+    updateSubStripPattern(stripFadingToRedVoiture);
+  }
+  if (millis() - stripFadeGreenMaison.lastUpdate > stripFadeGreenMaison.patternInterval)
+  {
+    updateSubStripPattern(stripFadeGreenMaison);
+  }
+  if (millis() - stripConstant.lastUpdate > stripConstant.patternInterval)
+  {
+    updateSubStripPattern(stripConstant);
+  }
   // VEHICULE TO GRID //
-
+/*
   if (millis() - stripChasingBlue.lastUpdate > stripChasingBlue.patternInterval)
   {
     updateSubStripPattern(stripChasingBlue);
@@ -116,7 +128,7 @@ void loop()
   {
     updateSubStripPattern(stripConstant);
   }
-
+*/
   // PANNEAU PV //
   /*
     if (millis() - stripFade.lastUpdate > stripFade.patternInterval)
@@ -188,6 +200,9 @@ void updateSubStripPattern(subStrips &substripOut)
     break;
   case FADING:
     steps_fade = fade(substripOut, strip.Color(100, 0, 0), steps_fade);
+    break;
+  case FADING_GREEN_MAISON:
+    steps_fade_green_maison = fade_green_maison(substripOut, strip.Color(0, 100, 0), steps_fade_green_maison);
     break;
   case BLINK:
     blinkEffect(substripOut, 111);
@@ -496,6 +511,44 @@ int fade_to_red(subStrips &substrip, int steps_fade_to_red)
   }
   return steps_fade_to_red;
 }
+
+int fade_green_maison(subStrips &substrip, uint32_t color, int steps_fade_green_maison)
+{
+  if (steps_fade_green_maison < 50)
+  {
+    for (int i = 0; i < substrip.size_tab; i += 2)
+    {
+      for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
+      {
+        strip.setPixelColor(dx, strip.Color(0, 50 - steps_fade_green_maison, 0));
+      }
+    }
+    strip.show();
+    substrip.lastUpdate = millis(); // time for next change to the display
+    steps_fade_green_maison += 3;
+  }
+  else
+  {
+    for (int i = 0; i < substrip.size_tab; i += 2)
+    {
+      for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
+      {
+        strip.setPixelColor(dx, strip.Color(0, -50 + steps_fade_green_maison, 0));
+      }
+    }
+    strip.show();
+    substrip.lastUpdate = millis(); // time for next change to the display
+    steps_fade_green_maison += 3;
+  }
+
+  if (steps_fade_green_maison > 100)
+  {
+    steps_fade_green_maison = 0;
+  }
+
+  return steps_fade_green_maison;
+}
+
 
 void rainbow(subStrips &substrip)
 { // modified from Adafruit example to make it a state machine
