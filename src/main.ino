@@ -22,7 +22,10 @@ enum pattern_type
   CHASING,
   CHASING_BLUE,
   FADING_TO_GREEN,
-  FADING_TO_RED
+  FADING_TO_RED,
+  FADING_TO_GREEN_VOITURE,
+  FADING_TO_RED_VOITURE,
+  CONSTANT
 };
 
 struct subStrips
@@ -42,9 +45,11 @@ int panneau_pv[] = {230, 242, 401, 478, 991, 1051, 1064, 1152};
 int batt[] = {246, 251, 483, 486, 1058, 1062};
 int borne_charge[] = {988, 991, 1300, 1305};
 int vehicule[] = {986, 988, 1209, 1213, 1305, 1312, 1320, 1324};
+int vehicule_to_grid[] = {986, 988, 1209, 1213};
+int vehicule_to_home[] = {1305, 1312, 1320, 1324};
 int maison[] = {1292, 1300, 1313, 1320, 1324, 1332};
 
-// 2 petite leds blue ?? 
+// 2 petite leds blue ??
 int partie_bleu[] = {0, 230, 251, 293, 295, 393, 488, 548, 570, 619, 627, 640, 800, 986, 1152, 1209, 1213, 1290, 642, 695, 697, 782};
 int poste_distribution[] = {293, 295, 401, 403, 515, 517, 640, 642, 696, 698, 860, 862, 1290, 1292}; // 370 ?
 
@@ -61,11 +66,19 @@ subStrips stripChasingBlue = {50, 20, CHASING_BLUE, 2, 0, partie_bleu, 22};
 subStrips stripFadingToRed = {50, 20, FADING_TO_RED, 1000, 0, batt, 6};
 subStrips stripFadeBattery = {40, 10, FADING, 35, 0, batiment_acc, 10};
 
+subStrips stripFadingToGreenVoiture = {50, 20, FADING_TO_GREEN, 500, 0, vehicule_to_grid, 4};
+subStrips stripFadingToRedVoiture = {50, 20, FADING_TO_RED, 500, 0, vehicule_to_home, 4};
+
+subStrips stripConstant = {50, 20, CONSTANT, 1000, 0, borne_charge, 4};
+
+
 int steps_fade = 0;
 int steps_chase = 0;
 int steps_chase_blue = 0;
 int steps_fade_to_green = 1;
 int steps_fade_to_red = 1;
+int steps_fade_to_green_voiture = 1;
+int steps_fade_to_red_voiture = 1;
 
 void setup()
 {
@@ -76,21 +89,7 @@ void setup()
 
 void loop()
 {
-// PV Version Nuit // 
-    if (millis() - stripFadingToRed.lastUpdate > stripFadingToRed.patternInterval)
-    {
-      updateSubStripPattern(stripFadingToRed);
-    }
 
-    if (millis() - stripFadeBattery.lastUpdate > stripFadeBattery.patternInterval)
-    {
-      updateSubStripPattern(stripFadeBattery);
-    }
-
-        if (millis() - stripChasingBlue.lastUpdate > stripChasingBlue.patternInterval)
-    {
-      updateSubStripPattern(stripChasingBlue);
-    }
   // subStrip Ramp
   /*
   if (millis() - stripBlink.lastUpdate > stripBlink.patternInterval)
@@ -98,14 +97,25 @@ void loop()
     updateSubStripPattern(stripBlink);
   }
   */
+  // VEHICULE TO GRID //
 
-  // subStrip Single1
-  /*
-  if (millis() - stripRainbow.lastUpdate > stripRainbow.patternInterval)
-    updateSubStripPattern(stripRainbow);
-*/
+  if (millis() - stripChasingBlue.lastUpdate > stripChasingBlue.patternInterval)
+  {
+    updateSubStripPattern(stripChasingBlue);
+  }
+  if (millis() - stripFade.lastUpdate > stripFade.patternInterval)
+  {
+    updateSubStripPattern(stripFade);
+  }
+  if (millis() - stripFadingToGreenVoiture.lastUpdate > stripFadingToGreenVoiture.patternInterval)
+  {
+    updateSubStripPattern(stripFadingToGreenVoiture);
+  }
 
-  // Panneau nuit
+  if (millis() - stripConstant.lastUpdate > stripConstant.patternInterval)
+  {
+    updateSubStripPattern(stripConstant);
+  }
 
   // PANNEAU PV //
   /*
@@ -128,6 +138,24 @@ void loop()
       updateSubStripPattern(stripFadingToRed);
     }
   */
+
+  // PV Version Nuit //
+  /*
+  if (millis() - stripFadingToRed.lastUpdate > stripFadingToRed.patternInterval)
+  {
+    updateSubStripPattern(stripFadingToRed);
+  }
+
+  if (millis() - stripFadeBattery.lastUpdate > stripFadeBattery.patternInterval)
+  {
+    updateSubStripPattern(stripFadeBattery);
+  }
+
+  if (millis() - stripChasingBlue.lastUpdate > stripChasingBlue.patternInterval)
+  {
+    updateSubStripPattern(stripChasingBlue);
+  }
+  */
 }
 
 void updateSubStripPattern(subStrips &substripOut)
@@ -137,8 +165,17 @@ void updateSubStripPattern(subStrips &substripOut)
   case RAINBOW:
     rainbow(substripOut);
     break;
+  case CONSTANT:
+    constant(substripOut, strip.Color(0, 0, 100));
+    break;
   case FADING_TO_GREEN:
     steps_fade_to_green = fade_green(substripOut, steps_fade_to_green);
+    break;
+  case FADING_TO_GREEN_VOITURE:
+    steps_fade_to_green = fade_green_voiture(substripOut, steps_fade_to_green_voiture);
+    break;
+  case FADING_TO_RED_VOITURE:
+    steps_fade_to_red = fade_green_voiture(substripOut, steps_fade_to_red_voiture);
     break;
   case FADING_TO_RED:
     steps_fade_to_red = fade_to_red(substripOut, steps_fade_to_red);
@@ -195,7 +232,7 @@ int chasing_blue(subStrips &substrip, uint32_t color, int steps_chase_blue)
       {
         color = 0;
       }
-      strip.setPixelColor(dx, 0, 0, color);
+      strip.setPixelColor(dx, 0, color, color);
     }
   }
   strip.show();
@@ -241,6 +278,19 @@ void blinkEffect(subStrips &substrip, uint32_t color)
       {
         strip.setPixelColor(dx, 0);
       }
+    }
+  }
+  strip.show();
+  substrip.lastUpdate = millis(); // time for next change to the display
+}
+
+void constant(subStrips &substrip, uint32_t color)
+{
+  for (int i = 0; i < substrip.size_tab; i += 2)
+  {
+    for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
+    {
+      strip.setPixelColor(dx, color);
     }
   }
   strip.show();
@@ -348,6 +398,72 @@ int fade_green(subStrips &substrip, int steps_fade_to_green)
   return steps_fade_to_green;
 }
 
+int fade_green_voiture(subStrips &substrip, int steps_fade_to_green_voiture)
+{
+  if (steps_fade_to_green_voiture < 150)
+  {
+    // Serial.println(steps_fade_to_red);
+    for (int i = 0; i < substrip.size_tab; i += 2)
+    {
+      for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
+      {
+        strip.setPixelColor(dx, strip.Color(150, steps_fade_to_green_voiture, 0));
+      }
+    }
+    strip.show();
+    substrip.lastUpdate = millis(); // time for next change to the display
+    steps_fade_to_green_voiture += 3;
+  }
+
+  if (steps_fade_to_green_voiture > 150 && steps_fade_to_green_voiture < 300)
+  {
+    for (int i = 0; i < substrip.size_tab; i += 2)
+    {
+      for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
+      {
+        strip.setPixelColor(dx, strip.Color(300 - steps_fade_to_green_voiture, 150, 0));
+      }
+    }
+    strip.show();
+    substrip.lastUpdate = millis(); // time for next change to the display
+    steps_fade_to_green_voiture += 3;
+  }
+  return steps_fade_to_green_voiture;
+}
+
+int fade_red_voiture(subStrips &substrip, int steps_fade_to_red_voiture)
+{
+  if (steps_fade_to_red_voiture < 150)
+  {
+    // Serial.println(steps_fade_to_red);
+    for (int i = 0; i < substrip.size_tab; i += 2)
+    {
+      for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
+      {
+        strip.setPixelColor(dx, strip.Color(150, steps_fade_to_red_voiture, 0));
+      }
+    }
+    strip.show();
+    substrip.lastUpdate = millis(); // time for next change to the display
+    steps_fade_to_red_voiture += 3;
+  }
+
+  if (steps_fade_to_red_voiture > 150 && steps_fade_to_red_voiture < 300)
+  {
+    for (int i = 0; i < substrip.size_tab; i += 2)
+    {
+      for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
+      {
+        strip.setPixelColor(dx, strip.Color(300 - steps_fade_to_red_voiture, 150, 0));
+      }
+    }
+    strip.show();
+    substrip.lastUpdate = millis(); // time for next change to the display
+    steps_fade_to_red_voiture += 3;
+  }
+  return steps_fade_to_red_voiture;
+}
+
 int fade_to_red(subStrips &substrip, int steps_fade_to_red)
 {
   if (steps_fade_to_red < 150)
@@ -371,7 +487,7 @@ int fade_to_red(subStrips &substrip, int steps_fade_to_red)
     {
       for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
       {
-        strip.setPixelColor(dx, strip.Color(150, 300-steps_fade_to_red, 0));
+        strip.setPixelColor(dx, strip.Color(150, 300 - steps_fade_to_red, 0));
       }
     }
     strip.show();
