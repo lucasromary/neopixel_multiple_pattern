@@ -55,38 +55,28 @@ subStrips stripChasingBlue = {CHASING_BLUE, 2, 0, partie_bleu, 24};
 subStrips stripChasingYellow = {CHASING_YELLOW, 2, 0, chemin_pv, 2};
 subStrips stripChasingYellowReverse = {CHASING_YELLOW_REVERSE, 2, 0, chemin_pv_reverse, 6};
 
-subStrips stripFadingToGreen = {FADING_TO_GREEN_BATT, 1000, 0, batt, 6};
-subStrips stripFadingToRed = {FADING_TO_RED_BATT, 1000, 0, batt, 6};
-subStrips stripFadingToGreenVoiture = {FADING_TO_GREEN_VOITURE, 250, 0, vehicule_to_grid, 4};
-subStrips stripFadingToRedVoiture = {FADING_TO_RED_VOITURE, 250, 0, vehicule_to_home, 4};
+subStrips stripFadingToGreen = {FADING_TO_GREEN_BATT, 500, 0, batt, 6};
+subStrips stripFadingToRed = {FADING_TO_RED_BATT, 500, 0, batt, 6};
+subStrips stripFadingToGreenVoiture = {FADING_TO_GREEN_VOITURE, 200, 0, vehicule_to_grid, 4};
+subStrips stripFadingToRedVoiture = {FADING_TO_RED_VOITURE, 200, 0, vehicule_to_home, 4};
 
-subStrips stripConstant = {CONSTANT, 100000, 100000 - 100, borne_charge, 4};
-subStrips stripConstant_poste_distribution = {CONSTANT, 100000, 100000 - 100, poste_distribution, 14};
+subStrips stripConstant = {CONSTANT, 1000, 0, borne_charge, 4};
+subStrips stripConstant_poste_distribution = {CONSTANT, 1000,  0, poste_distribution, 14};
 subStrips stripFadeGreenMaison = {FADING_GREEN_MAISON, 35, 0, maison, 6};
 
 int steps_fade_yellow = 0;
 int steps_chase_yellow = 0;
 int steps_chase_yellow_reverse = 0;
 int steps_chase_blue = 0;
-int steps_fade_to_green = 1;
-int steps_fade_to_red = 1;
-int steps_fade_to_green_voiture = 1;
-int steps_fade_to_red_voiture = 1;
+int steps_fade_to_green = 0;
+int steps_fade_to_red = 0;
+int steps_fade_to_green_voiture = 0;
+int steps_fade_to_red_voiture = 0;
 int steps_fade_green_maison = 0;
+long timer = 0;
 
-void setup()
-{
-  strip.begin(); // This initializes the NeoPixel library.
-  Serial.begin(9600);
-  wipe(); // wipes the LED buffers
-}
-
-void loop()
-{
-
+void vehicule_2_home(){
   // VEHICULE TO HOME //
-
-  
   if (millis() - stripChasingBlue.lastUpdate > stripChasingBlue.patternInterval)
   {
     updateSubStripPattern(stripChasingBlue);
@@ -99,17 +89,19 @@ void loop()
   {
     updateSubStripPattern(stripFadeGreenMaison);
   }
-  if (millis() - stripConstant.lastUpdate > stripConstant.patternInterval)
-  {
-    updateSubStripPattern(stripConstant);
-  }
   if (millis() - stripConstant_poste_distribution.lastUpdate > stripConstant_poste_distribution.patternInterval)
   {
     updateSubStripPattern(stripConstant_poste_distribution);
   }
-  
+  if (millis() - stripConstant.lastUpdate > stripConstant.patternInterval)
+  {
+    updateSubStripPattern(stripConstant);
+  }
+}
+
+void vehicule_2_grid()
+{
   // VEHICULE TO GRID //
-/*
   if (millis() - stripChasingBlue.lastUpdate > stripChasingBlue.patternInterval)
   {
     updateSubStripPattern(stripChasingBlue);
@@ -122,50 +114,53 @@ void loop()
   {
     updateSubStripPattern(stripFadingToGreenVoiture);
   }
-
+  if (millis() - stripConstant_poste_distribution.lastUpdate > stripConstant_poste_distribution.patternInterval)
+  {
+    updateSubStripPattern(stripConstant_poste_distribution);
+  }
   if (millis() - stripConstant.lastUpdate > stripConstant.patternInterval)
   {
     updateSubStripPattern(stripConstant);
+  }
+}
+
+void panneau_pv_jour()
+{
+  // PANNEAU PV //
+
+  if (millis() - stripFadeYellowPV.lastUpdate > stripFadeYellowPV.patternInterval)
+  {
+    updateSubStripPattern(stripFadeYellowPV);
+  }
+
+  if (millis() - stripChasingBlue.lastUpdate > stripChasingBlue.patternInterval)
+  {
+    updateSubStripPattern(stripChasingBlue);
+  }
+  if (millis() - stripFadingToGreen.lastUpdate > stripFadingToGreen.patternInterval)
+  {
+    updateSubStripPattern(stripFadingToGreen);
+  }
+
+  if (millis() - stripChasingYellow.lastUpdate > stripChasingYellow.patternInterval)
+  {
+    updateSubStripPattern(stripChasingYellow);
+  }
+
+  if (millis() - stripChasingYellowReverse.lastUpdate > stripChasingYellowReverse.patternInterval)
+  {
+    updateSubStripPattern(stripChasingYellowReverse);
   }
   if (millis() - stripConstant_poste_distribution.lastUpdate > stripConstant_poste_distribution.patternInterval)
   {
     updateSubStripPattern(stripConstant_poste_distribution);
   }
-*/
-  // PANNEAU PV //
-  /*
-    if (millis() - stripFadeYellowPV.lastUpdate > stripFadeYellowPV.patternInterval)
-    {
-      updateSubStripPattern(stripFadeYellowPV);
-    }
+}
 
-    if (millis() - stripChasingBlue.lastUpdate > stripChasingBlue.patternInterval)
-    {
-      updateSubStripPattern(stripChasingBlue);
-    }
-    if (millis() - stripFadingToGreen.lastUpdate > stripFadingToGreen.patternInterval)
-    {
-      updateSubStripPattern(stripFadingToGreen);
-    }
-
-    if (millis() - stripConstant_poste_distribution.lastUpdate > stripConstant_poste_distribution.patternInterval)
-    {
-      updateSubStripPattern(stripConstant_poste_distribution);
-    }
-
-    if (millis() - stripChasingYellow.lastUpdate > stripChasingYellow.patternInterval)
-    {
-      updateSubStripPattern(stripChasingYellow);
-    }
-
-    if (millis() - stripChasingYellowReverse.lastUpdate > stripChasingYellowReverse.patternInterval)
-    {
-      updateSubStripPattern(stripChasingYellowReverse);
-    }
-  */
-
+void panneau_pv_nuit()
+{
   // PV Version Nuit //
-  /*
+
   if (millis() - stripFadingToRed.lastUpdate > stripFadingToRed.patternInterval)
   {
     updateSubStripPattern(stripFadingToRed);
@@ -185,7 +180,57 @@ void loop()
   {
     updateSubStripPattern(stripConstant_poste_distribution);
   }
-  */
+}
+
+void reset_variables()
+{
+  steps_fade_yellow = 0;
+  steps_chase_yellow = 0;
+  steps_chase_yellow_reverse = 0;
+  steps_chase_blue = 0;
+  steps_fade_to_green = 0;
+  steps_fade_to_red = 0;
+  steps_fade_to_green_voiture = 0;
+  steps_fade_to_red_voiture = 0;
+  steps_fade_green_maison = 0;
+  wipe();
+}
+void setup()
+{
+  strip.begin(); // This initializes the NeoPixel library.
+  Serial.begin(9600);
+  wipe(); // wipes the LED buffers
+}
+
+void loop()
+{
+  timer = millis();
+  while (millis() - timer < 60000)
+  {
+    panneau_pv_jour();
+  }
+  reset_variables();
+
+  timer = millis();
+  while (millis() - timer < 60000)
+  {
+    panneau_pv_nuit();
+  }
+  reset_variables();
+
+  timer = millis();
+  while (millis() - timer < 30000)
+  {
+    vehicule_2_grid();
+  }
+  reset_variables();
+
+  timer = millis();
+  while (millis() - timer < 30000)
+  {
+    vehicule_2_home();
+  }
+  reset_variables();
 }
 
 void updateSubStripPattern(subStrips &substripOut)
@@ -406,7 +451,7 @@ int fade_green_batt(subStrips &substrip, int steps_fade_to_green)
     {
       for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
       {
-        strip.setPixelColor(dx, strip.Color(300 - steps_fade_to_green, 150, 0));
+        strip.setPixelColor(dx, strip.Color(500 - steps_fade_to_green, 250, 0));
       }
     }
     strip.show();
@@ -495,7 +540,7 @@ int fade_to_red_voiture(subStrips &substrip, int steps_fade_to_red_voiture)
     {
       for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
       {
-        strip.setPixelColor(dx, strip.Color(steps_fade_to_red_voiture,250 , 0));
+        strip.setPixelColor(dx, strip.Color(steps_fade_to_red_voiture, 250, 0));
       }
     }
     strip.show();
