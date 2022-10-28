@@ -61,7 +61,7 @@ subStrips stripFadingToGreenVoiture = {FADING_TO_GREEN_VOITURE, 200, 0, vehicule
 subStrips stripFadingToRedVoiture = {FADING_TO_RED_VOITURE, 200, 0, vehicule_to_home, 4};
 
 subStrips stripConstant = {CONSTANT, 1000, 0, borne_charge, 4};
-subStrips stripConstant_poste_distribution = {CONSTANT, 1000,  0, poste_distribution, 14};
+subStrips stripConstant_poste_distribution = {CONSTANT, 1000, 0, poste_distribution, 14};
 subStrips stripFadeGreenMaison = {FADING_GREEN_MAISON, 35, 0, maison, 6};
 
 int steps_fade_yellow = 0;
@@ -74,8 +74,15 @@ int steps_fade_to_green_voiture = 0;
 int steps_fade_to_red_voiture = 0;
 int steps_fade_green_maison = 0;
 long timer = 0;
+long timer2 = 0;
+int incomingByte = 0;
+String incommingString;
+bool v2g_v2h = 0;
+int mode_auto_val = -1;
+int mode = 0;
 
-void vehicule_2_home(){
+void vehicule_2_home()
+{
   // VEHICULE TO HOME //
   if (millis() - stripChasingBlue.lastUpdate > stripChasingBlue.patternInterval)
   {
@@ -193,8 +200,73 @@ void reset_variables()
   steps_fade_to_green_voiture = 0;
   steps_fade_to_red_voiture = 0;
   steps_fade_green_maison = 0;
-  wipe();
 }
+
+void mode_automatic()
+{
+  if (mode_auto_val == -1)
+  {
+    timer = millis();
+    mode_auto_val = 0;
+  }
+
+  if (mode_auto_val == 0)
+  {
+    if (millis() - timer < 60000)
+    {
+      panneau_pv_jour();
+    }
+    else
+    {
+      mode_auto_val = 1;
+      reset_variables();
+      wipe();
+    }
+  }
+
+  if (mode_auto_val == 1)
+  {
+    if (millis() - timer > 60000 && millis() - timer < 120000)
+    {
+      panneau_pv_nuit();
+    }
+    else
+    {
+      mode_auto_val = 2;
+      reset_variables();
+      wipe();
+    }
+  }
+
+  if (mode_auto_val == 2)
+  {
+    if (millis() - timer > 120000 && millis() - timer < 150000)
+    {
+      vehicule_2_grid();
+    }
+    else
+    {
+      mode_auto_val = 3;
+      reset_variables();
+      wipe();
+    }
+  }
+
+  if (mode_auto_val == 3)
+  {
+    if (millis() - timer > 150000 && millis() - timer < 180000)
+    {
+      vehicule_2_home();
+    }
+    else
+    {
+      mode_auto_val = -1;
+      reset_variables();
+      wipe();
+    }
+  }
+}
+
 void setup()
 {
   strip.begin(); // This initializes the NeoPixel library.
@@ -204,33 +276,88 @@ void setup()
 
 void loop()
 {
-  timer = millis();
-  while (millis() - timer < 60000)
+  if (Serial.available() > 0)
+  {
+    // read the incoming byte:
+    // incomingByte = Serial.read();
+    String incommingString = Serial.readString();
+    // say what you got:
+    Serial.print("I received: ");
+    Serial.println(incommingString);
+
+    timer2 = millis();
+    if (incommingString.indexOf("Scénario_1") != -1)
+    {
+      mode = 1;
+      Serial.println("Mode 1");
+      wipe();
+    }
+    if (incommingString.indexOf("Scénario_2") != -1)
+    {
+      mode = 2;
+      wipe();
+    }
+    if (incommingString.indexOf("Scénario_4") != -1)
+    {
+      mode = 4;
+      wipe();
+    }
+    if (incommingString.indexOf("Scénario_5") != -1)
+    {
+      mode = 5;
+      wipe();
+    }
+  }
+
+  if (mode == 1)
   {
     panneau_pv_jour();
+    if (millis() - timer2 > 60000)
+    {
+      reset_variables();
+      timer2 = millis();
+      wipe();
+    }
   }
-  reset_variables();
-
-  timer = millis();
-  while (millis() - timer < 60000)
+  else if (mode == 2)
   {
     panneau_pv_nuit();
+    if (millis() - timer2 > 60000)
+    {
+      reset_variables();
+      timer2 = millis();
+      wipe();
+    }
   }
-  reset_variables();
-
-  timer = millis();
-  while (millis() - timer < 30000)
+  else if (mode == 4)
   {
-    vehicule_2_grid();
+    if (v2g_v2h == 0)
+    {
+      vehicule_2_grid();
+      if (millis() - timer2 > 30000)
+      {
+        reset_variables();
+        timer2 = millis();
+        v2g_v2h = 1;
+        wipe();
+      }
+    }
+    else
+    {
+      vehicule_2_home();
+      if (millis() - timer2 > 30000)
+      {
+        reset_variables();
+        timer2 = millis();
+        v2g_v2h = 0;
+        wipe();
+      }
+    }
   }
-  reset_variables();
-
-  timer = millis();
-  while (millis() - timer < 30000)
+  else if (mode == 5)
   {
-    vehicule_2_home();
+    mode_automatic();
   }
-  reset_variables();
 }
 
 void updateSubStripPattern(subStrips &substripOut)
@@ -568,7 +695,6 @@ int fade_to_red_batt(subStrips &substrip, int steps_fade_to_red)
 {
   if (steps_fade_to_red < 250)
   {
-    // Serial.println(steps_fade_to_red);
     for (int i = 0; i < substrip.size_tab; i += 2)
     {
       for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
@@ -618,6 +744,7 @@ void wipe()
   {
     strip.setPixelColor(i, strip.Color(0, 0, 0));
   }
+  strip.show();
 }
 
 uint32_t Wheel(byte WheelPos)
