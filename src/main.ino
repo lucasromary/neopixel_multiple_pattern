@@ -34,12 +34,12 @@ struct subStrips
   int size_tab;
 };
 
-int partie_bleu[] = {0, 230, 251, 293, 295, 393, 486, 515, 517, 548, 570, 619, 627, 640, 800, 986, 1152, 1209, 1213, 1290, 642, 695, 698, 782}; // 2 petite leds blue ??
-int poste_distribution[] = {293, 295, 401, 403, 515, 517, 640, 642, 696, 698, 860, 862, 1290, 1292};                                            // 370 ?
+int partie_bleu[] = {0, 230, 251, 293, 295, 370, 372, 393, 486, 515, 517, 548, 570, 619, 627, 640, 800,860,862, 986, 1152, 1209, 1213, 1290, 642, 695, 698, 782}; // 2 petite leds blue ??
+int poste_distribution[] = {293, 295, 370, 372, 515, 517, 640, 642, 696, 698, 860, 862, 1290, 1292};                                            // 370 ?
 int chemin_pv[] = {1062, 1064};
 int chemin_pv_reverse[] = {242, 246, 478, 483, 1051, 1058};
 int batiment_acc[12] = {230, 242, 393, 401, 782, 800, 619, 627, 566, 570};
-int panneau_pv[] = {230, 242, 403, 478, 991, 1051, 1064, 1152};
+int panneau_pv[] = {230, 242, 401, 478, 991, 1051, 1064, 1152};
 int batt[] = {246, 251, 483, 486, 1058, 1062};
 int borne_charge[] = {988, 991, 1300, 1305};
 int vehicule[] = {986, 988, 1209, 1213, 1305, 1312, 1320, 1324};
@@ -48,15 +48,15 @@ int vehicule_to_home[] = {1305, 1312, 1320, 1324};
 int maison[] = {1292, 1300, 1313, 1320, 1324, 1332};
 
 subStrips stripBlink = {BLINK, 2000, 0, panneau_pv, 30};
-subStrips stripFadeYellowPV = {FADING_YELLOW, 35, 0, panneau_pv, 8};
-subStrips stripFadeYellowBatimentACC = {FADING_YELLOW, 35, 0, batiment_acc, 10};
 
-subStrips stripChasingBlue = {CHASING_BLUE, 2, 0, partie_bleu, 24};
+subStrips stripChasingBlue = {CHASING_BLUE, 2, 0, partie_bleu, 28};
 subStrips stripChasingYellow = {CHASING_YELLOW, 2, 0, chemin_pv, 2};
 subStrips stripChasingYellowReverse = {CHASING_YELLOW_REVERSE, 2, 0, chemin_pv_reverse, 6};
 
-subStrips stripFadingToGreen = {FADING_TO_GREEN_BATT, 500, 0, batt, 6};
-subStrips stripFadingToRed = {FADING_TO_RED_BATT, 500, 0, batt, 6};
+subStrips stripFadeYellowPV = {FADING_YELLOW, 40, 0, panneau_pv, 8};
+subStrips stripFadeYellowBatimentACC = {FADING_YELLOW, 40, 0, batiment_acc, 10};
+subStrips stripFadingToGreen = {FADING_TO_GREEN_BATT, 200, 0, batt, 6};
+subStrips stripFadingToRed = {FADING_TO_RED_BATT, 200, 0, batt, 6};
 subStrips stripFadingToGreenVoiture = {FADING_TO_GREEN_VOITURE, 200, 0, vehicule_to_grid, 4};
 subStrips stripFadingToRedVoiture = {FADING_TO_RED_VOITURE, 200, 0, vehicule_to_home, 4};
 
@@ -200,6 +200,30 @@ void reset_variables()
   steps_fade_to_green_voiture = 0;
   steps_fade_to_red_voiture = 0;
   steps_fade_green_maison = 0;
+  v2g_v2h = 0;
+}
+
+void blink_leds()
+{
+  for (int i = 0; i < 1400; i++)
+  {
+    strip.setPixelColor(i, strip.Color(0, 150, 0));
+  }
+  strip.show();
+  delay(500);
+
+  wipe();
+  delay(500);
+
+  for (int i = 0; i < 1400; i++)
+  {
+    strip.setPixelColor(i, strip.Color(0, 150, 0));
+  }
+  strip.show();
+  delay(500);
+
+  wipe();
+  delay(500);
 }
 
 void mode_automatic()
@@ -291,21 +315,29 @@ void loop()
       mode = 1;
       Serial.println("Mode 1");
       wipe();
+      reset_variables();
+      blink_leds();
     }
     if (incommingString.indexOf("Scénario_2") != -1)
     {
       mode = 2;
       wipe();
+      reset_variables();
+      blink_leds();
     }
     if (incommingString.indexOf("Scénario_4") != -1)
     {
       mode = 4;
       wipe();
+      reset_variables();
+      blink_leds();
     }
     if (incommingString.indexOf("Scénario_5") != -1)
     {
       mode = 5;
       wipe();
+      reset_variables();
+      blink_leds();
     }
   }
 
@@ -314,9 +346,10 @@ void loop()
     panneau_pv_jour();
     if (millis() - timer2 > 60000)
     {
-      reset_variables();
-      timer2 = millis();
       wipe();
+      reset_variables();
+      blink_leds();
+      timer2 = millis();
     }
   }
   else if (mode == 2)
@@ -324,9 +357,10 @@ void loop()
     panneau_pv_nuit();
     if (millis() - timer2 > 60000)
     {
-      reset_variables();
-      timer2 = millis();
       wipe();
+      reset_variables();
+      blink_leds();
+      timer2 = millis();
     }
   }
   else if (mode == 4)
@@ -336,10 +370,11 @@ void loop()
       vehicule_2_grid();
       if (millis() - timer2 > 30000)
       {
+        wipe();
         reset_variables();
+        blink_leds();
         timer2 = millis();
         v2g_v2h = 1;
-        wipe();
       }
     }
     else
@@ -347,10 +382,10 @@ void loop()
       vehicule_2_home();
       if (millis() - timer2 > 30000)
       {
-        reset_variables();
-        timer2 = millis();
-        v2g_v2h = 0;
         wipe();
+        reset_variables();
+        blink_leds();
+        timer2 = millis();
       }
     }
   }
@@ -520,18 +555,18 @@ void constant(subStrips &substrip, uint32_t color)
 
 int fade_yellow(subStrips &substrip, int steps_fade_yellow)
 {
-  if (steps_fade_yellow < 50)
+  if (steps_fade_yellow < 200)
   {
     for (int i = 0; i < substrip.size_tab; i += 2)
     {
       for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
       {
-        strip.setPixelColor(dx, strip.Color(50 - steps_fade_yellow, 50 - steps_fade_yellow, 0));
+        strip.setPixelColor(dx, strip.Color(200 - steps_fade_yellow, 200 - steps_fade_yellow, 0));
       }
     }
     strip.show();
     substrip.lastUpdate = millis(); // time for next change to the display
-    steps_fade_yellow += 3;
+    steps_fade_yellow += 6;
   }
   else
   {
@@ -539,15 +574,15 @@ int fade_yellow(subStrips &substrip, int steps_fade_yellow)
     {
       for (int dx = substrip.led[i]; dx < substrip.led[i + 1]; dx++)
       {
-        strip.setPixelColor(dx, strip.Color(-50 + steps_fade_yellow, -50 + steps_fade_yellow, 0));
+        strip.setPixelColor(dx, strip.Color(-200 + steps_fade_yellow, -200 + steps_fade_yellow, 0));
       }
     }
     strip.show();
     substrip.lastUpdate = millis(); // time for next change to the display
-    steps_fade_yellow += 3;
+    steps_fade_yellow += 6;
   }
 
-  if (steps_fade_yellow > 100)
+  if (steps_fade_yellow > 400)
   {
     steps_fade_yellow = 0;
   }
